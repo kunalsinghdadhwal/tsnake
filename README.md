@@ -17,12 +17,12 @@ A beautiful, fully-featured terminal Snake game written in Rust.
 ### From source
 
 ```bash
-git clone https://github.com/yourusername/tsnake.git
+git clone https://github.com/kunalsinghdadhwal/tsnake.git
 cd tsnake
 cargo install --path .
 ```
 
-### From crates.io (once published)
+### From crates.io 
 
 ```bash
 cargo install tsnake

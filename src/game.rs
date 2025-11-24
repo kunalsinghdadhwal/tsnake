@@ -196,7 +196,7 @@ impl Game {
             self.score += 10;
             self.food_eaten += 1;
 
-            if self.food_eaten % 8 == 0 {
+            if self.food_eaten.is_multiple_of(8) {
                 let reduction = Duration::from_millis(5);
                 if self.current_tick_rate > Duration::from_millis(40) {
                     self.current_tick_rate = self.current_tick_rate.saturating_sub(reduction);

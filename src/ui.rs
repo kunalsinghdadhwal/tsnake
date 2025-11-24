@@ -96,7 +96,7 @@ fn draw_main_menu(f: &mut Frame, game: &Game) {
     let title_widget = Paragraph::new(title);
     f.render_widget(title_widget, chunks[0]);
 
-    let menu_items = vec!["Play", "High Scores", "Quit"];
+    let menu_items = ["Play", "High Scores", "Quit"];
     let mut menu_lines = vec![Line::from("")];
 
     for (i, item) in menu_items.iter().enumerate() {
@@ -266,8 +266,8 @@ fn draw_game(f: &mut Frame, game: &Game) {
 
     draw_header(f, game, vertical_chunks[0]);
 
-    let game_width = (game.width * 2 + 2) as u16;
-    let game_height = (game.height + 2) as u16;
+    let game_width = game.width * 2 + 2;
+    let game_height = game.height + 2;
 
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)

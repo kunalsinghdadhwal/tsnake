@@ -1,0 +1,148 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*.*.*"
+
+permissions:
+    contents: write
+
+jobs:
+    build:
+        name: Build ${{ matrix.target }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      target: x86_64-unknown-linux-gnu
+                      artifact_name: tsnake
+                      asset_name: tsnake-linux-x86_64
+                      archive_ext: tar.gz
+                    - os: windows-latest
+                      target: x86_64-pc-windows-msvc
+                      artifact_name: tsnake.exe
+                      asset_name: tsnake-windows-x86_64
+                      archive_ext: zip
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install Rust toolchain
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.target }}
+
+            - name: Build release binary
+              run: cargo build --release --target ${{ matrix.target }}
+
+            - name: Strip binary (Linux)
+              if: matrix.os == 'ubuntu-latest'
+              run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+            - name: Create archive (Linux)
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                  cd target/${{ matrix.target }}/release
+                  tar czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
+                  mv ${{ matrix.asset_name }}.tar.gz ../../..
+
+            - name: Create archive (Windows)
+              if: matrix.os == 'windows-latest'
+              shell: pwsh
+              run: |
+                  cd target/${{ matrix.target }}/release
+                  Compress-Archive -Path ${{ matrix.artifact_name }} -DestinationPath ${{ matrix.asset_name }}.zip
+                  Move-Item -Path ${{ matrix.asset_name }}.zip -Destination ../../..
+
+            - name: Generate SHA256 checksum (Linux)
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                  sha256sum ${{ matrix.asset_name }}.${{ matrix.archive_ext }} > ${{ matrix.asset_name }}.${{ matrix.archive_ext }}.sha256
+
+            - name: Generate SHA256 checksum (Windows)
+              if: matrix.os == 'windows-latest'
+              shell: pwsh
+              run: |
+                  $hash = (Get-FileHash -Algorithm SHA256 ${{ matrix.asset_name }}.${{ matrix.archive_ext }}).Hash
+                  "$hash  ${{ matrix.asset_name }}.${{ matrix.archive_ext }}" | Out-File -FilePath ${{ matrix.asset_name }}.${{ matrix.archive_ext }}.sha256 -Encoding ASCII
+
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.asset_name }}
+                  path: |
+                      ${{ matrix.asset_name }}.${{ matrix.archive_ext }}
+                      ${{ matrix.asset_name }}.${{ matrix.archive_ext }}.sha256
+
+    release:
+        name: Create Release
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: artifacts
+
+            - name: Display structure of downloaded files
+              run: ls -R artifacts
+
+            - name: Move artifacts to root
+              run: |
+                  mkdir -p release-assets
+                  find artifacts -type f -exec mv {} release-assets/ \;
+
+            - name: Create Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: release-assets/*
+                  body: |
+                      ## TSNAKE Release ${{ github.ref_name }}
+
+                      A beautiful terminal Snake game written in Rust.
+
+                      ### Downloads
+
+                      **Linux (x86_64)**
+                      - Binary: `tsnake-linux-x86_64.tar.gz`
+                      - SHA256: `tsnake-linux-x86_64.tar.gz.sha256`
+
+                      **Windows (x86_64)**
+                      - Binary: `tsnake-windows-x86_64.zip`
+                      - SHA256: `tsnake-windows-x86_64.zip.sha256`
+
+                      ### Installation
+
+                      **Linux:**
+                      ```bash
+                      tar xzf tsnake-linux-x86_64.tar.gz
+                      chmod +x tsnake
+                      sudo mv tsnake /usr/local/bin/
+                      ```
+
+                      **Windows:**
+                      Extract the zip file and add `tsnake.exe` to your PATH.
+
+                      ### Verify SHA256
+
+                      **Linux:**
+                      ```bash
+                      sha256sum -c tsnake-linux-x86_64.tar.gz.sha256
+                      ```
+
+                      **Windows (PowerShell):**
+                      ```powershell
+                      $expected = (Get-Content tsnake-windows-x86_64.zip.sha256).Split()[0]
+                      $actual = (Get-FileHash tsnake-windows-x86_64.zip -Algorithm SHA256).Hash
+                      $expected -eq $actual
+                      ```
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
