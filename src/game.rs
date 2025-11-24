@@ -139,31 +139,46 @@ impl Game {
         self.direction = self.next_direction;
 
         let head = self.snake.front().unwrap();
-        let new_head = match self.direction {
-            Direction::Up => Position {
-                x: head.x,
-                y: if head.y == 0 {
-                    self.height - 1
-                } else {
-                    head.y - 1
-                },
-            },
-            Direction::Down => Position {
-                x: head.x,
-                y: (head.y + 1) % self.height,
-            },
-            Direction::Left => Position {
-                x: if head.x == 0 {
-                    self.width - 1
-                } else {
-                    head.x - 1
-                },
-                y: head.y,
-            },
-            Direction::Right => Position {
-                x: (head.x + 1) % self.width,
-                y: head.y,
-            },
+
+        // Calculate new head position
+        let (new_x, new_y) = match self.direction {
+            Direction::Up => {
+                if head.y == 0 {
+                    // Hit top wall
+                    self.game_over();
+                    return;
+                }
+                (head.x as i32, head.y as i32 - 1)
+            }
+            Direction::Down => {
+                if head.y >= self.height - 1 {
+                    // Hit bottom wall
+                    self.game_over();
+                    return;
+                }
+                (head.x as i32, head.y as i32 + 1)
+            }
+            Direction::Left => {
+                if head.x == 0 {
+                    // Hit left wall
+                    self.game_over();
+                    return;
+                }
+                (head.x as i32 - 1, head.y as i32)
+            }
+            Direction::Right => {
+                if head.x >= self.width - 1 {
+                    // Hit right wall
+                    self.game_over();
+                    return;
+                }
+                (head.x as i32 + 1, head.y as i32)
+            }
+        };
+
+        let new_head = Position {
+            x: new_x as u16,
+            y: new_y as u16,
         };
 
         if self

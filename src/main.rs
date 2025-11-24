@@ -4,10 +4,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
-use std::{
-    io, panic,
-    time::{Duration, Instant},
-};
+use std::{io, panic, time::Instant};
 
 mod game;
 mod highscore;
