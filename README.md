@@ -2,6 +2,8 @@
 
 A beautiful, fully-featured terminal Snake game written in Rust.
 
+![tsnake 2025-11-24 22 45 51](https://github.com/user-attachments/assets/de53faac-62fe-4ce6-a632-5c0f238f3443)
+
 ## Features
 
 - **Smooth gameplay** with 120ms base tick rate
