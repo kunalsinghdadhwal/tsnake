@@ -19,12 +19,10 @@ jobs:
                       target: x86_64-unknown-linux-gnu
                       artifact_name: tsnake
                       asset_name: tsnake-linux-x86_64
-                      archive_ext: tar.gz
                     - os: windows-latest
                       target: x86_64-pc-windows-msvc
                       artifact_name: tsnake.exe
-                      asset_name: tsnake-windows-x86_64
-                      archive_ext: zip
+                      asset_name: tsnake-windows-x86_64.exe
 
         steps:
             - name: Checkout code
@@ -42,40 +40,37 @@ jobs:
               if: matrix.os == 'ubuntu-latest'
               run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
 
-            - name: Create archive (Linux)
+            - name: Prepare binary (Linux)
               if: matrix.os == 'ubuntu-latest'
               run: |
-                  cd target/${{ matrix.target }}/release
-                  tar czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
-                  mv ${{ matrix.asset_name }}.tar.gz ../../..
+                  cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+                  chmod +x ${{ matrix.asset_name }}
 
-            - name: Create archive (Windows)
+            - name: Prepare binary (Windows)
               if: matrix.os == 'windows-latest'
               shell: pwsh
               run: |
-                  cd target/${{ matrix.target }}/release
-                  Compress-Archive -Path ${{ matrix.artifact_name }} -DestinationPath ${{ matrix.asset_name }}.zip
-                  Move-Item -Path ${{ matrix.asset_name }}.zip -Destination ../../..
+                  Copy-Item -Path target/${{ matrix.target }}/release/${{ matrix.artifact_name }} -Destination ${{ matrix.asset_name }}
 
             - name: Generate SHA256 checksum (Linux)
               if: matrix.os == 'ubuntu-latest'
               run: |
-                  sha256sum ${{ matrix.asset_name }}.${{ matrix.archive_ext }} > ${{ matrix.asset_name }}.${{ matrix.archive_ext }}.sha256
+                  sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
 
             - name: Generate SHA256 checksum (Windows)
               if: matrix.os == 'windows-latest'
               shell: pwsh
               run: |
-                  $hash = (Get-FileHash -Algorithm SHA256 ${{ matrix.asset_name }}.${{ matrix.archive_ext }}).Hash
-                  "$hash  ${{ matrix.asset_name }}.${{ matrix.archive_ext }}" | Out-File -FilePath ${{ matrix.asset_name }}.${{ matrix.archive_ext }}.sha256 -Encoding ASCII
+                  $hash = (Get-FileHash -Algorithm SHA256 ${{ matrix.asset_name }}).Hash
+                  "$hash  ${{ matrix.asset_name }}" | Out-File -FilePath ${{ matrix.asset_name }}.sha256 -Encoding ASCII
 
             - name: Upload artifacts
               uses: actions/upload-artifact@v4
               with:
                   name: ${{ matrix.asset_name }}
                   path: |
-                      ${{ matrix.asset_name }}.${{ matrix.archive_ext }}
-                      ${{ matrix.asset_name }}.${{ matrix.archive_ext }}.sha256
+                      ${{ matrix.asset_name }}
+                      ${{ matrix.asset_name }}.sha256
 
     release:
         name: Create Release
@@ -105,43 +100,58 @@ jobs:
                   body: |
                       ## TSNAKE Release ${{ github.ref_name }}
 
-                      A beautiful terminal Snake game written in Rust.
+                      A beautiful terminal Snake game written in Rust with modern 2025 aesthetics.
 
                       ### Downloads
 
+                      Download the binary for your platform and run immediately:
+
                       **Linux (x86_64)**
-                      - Binary: `tsnake-linux-x86_64.tar.gz`
-                      - SHA256: `tsnake-linux-x86_64.tar.gz.sha256`
+                      - Binary: `tsnake-linux-x86_64`
+                      - SHA256: `tsnake-linux-x86_64.sha256`
 
                       **Windows (x86_64)**
-                      - Binary: `tsnake-windows-x86_64.zip`
-                      - SHA256: `tsnake-windows-x86_64.zip.sha256`
+                      - Binary: `tsnake-windows-x86_64.exe`
+                      - SHA256: `tsnake-windows-x86_64.exe.sha256`
 
-                      ### Installation
+                      ### Quick Start
 
                       **Linux:**
                       ```bash
-                      tar xzf tsnake-linux-x86_64.tar.gz
-                      chmod +x tsnake
-                      sudo mv tsnake /usr/local/bin/
+                      # Download and run
+                      chmod +x tsnake-linux-x86_64
+                      ./tsnake-linux-x86_64
+
+                      # Or install globally
+                      sudo mv tsnake-linux-x86_64 /usr/local/bin/tsnake
                       ```
 
                       **Windows:**
-                      Extract the zip file and add `tsnake.exe` to your PATH.
+                      Download `tsnake-windows-x86_64.exe`, rename to `tsnake.exe` if desired, and run directly.
+
+                      Optionally add to your PATH for global access.
 
                       ### Verify SHA256
 
                       **Linux:**
                       ```bash
-                      sha256sum -c tsnake-linux-x86_64.tar.gz.sha256
+                      sha256sum -c tsnake-linux-x86_64.sha256
                       ```
 
                       **Windows (PowerShell):**
                       ```powershell
-                      $expected = (Get-Content tsnake-windows-x86_64.zip.sha256).Split()[0]
-                      $actual = (Get-FileHash tsnake-windows-x86_64.zip -Algorithm SHA256).Hash
+                      $expected = (Get-Content tsnake-windows-x86_64.exe.sha256).Split()[0]
+                      $actual = (Get-FileHash tsnake-windows-x86_64.exe -Algorithm SHA256).Hash
                       $expected -eq $actual
                       ```
+
+                      ### Features
+                      - Beautiful neon colors and modern 2025 aesthetics
+                      - Multiple control schemes (Arrow keys, WASD, HJKL)
+                      - Progressive difficulty with speed increases
+                      - Persistent high scores
+                      - Wall collision detection
+                      - Pause and replay functionality
                   draft: false
                   prerelease: false
               env:
