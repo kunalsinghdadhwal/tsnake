@@ -1,6 +1,6 @@
 [package]
 name = "tsnake"
-version = "1.0.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["Kunal Singh Dadhwal <kunalsinghdadhwal@gmail.com>"]
 description = "A beautiful terminal-based Snake game"
